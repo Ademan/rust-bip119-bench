@@ -1,0 +1,22 @@
+[package]
+name = "bip119-bench"
+version = "0.1.0"
+license = "CC0-1.0"
+edition = "2021"
+repository = "https://github.com/ademan/rust-bip119-bench/"
+categories = ["cryptography::cryptocurrencies"]
+keywords = [ "crypto", "bitcoin" ]
+readme = "README.md"
+
+[dependencies]
+bip119 = { version = "0.1.0", path = "../rust-bip119" }
+bitcoin = { version = "0.32.7", features = ["rand-std"] }
+
+[dev-dependencies]
+bip119 = { path = "../rust-bip119" }
+bitcoin = { version = "0.32.7", features = ["rand-std"] }
+criterion = "0.7.0"
+
+[[bench]]
+name = "bench_hashing"
+harness = false
