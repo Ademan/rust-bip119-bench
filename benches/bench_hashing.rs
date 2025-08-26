@@ -1,12 +1,12 @@
-use bitcoin::{Amount, CompressedPublicKey, NetworkKind, PrivateKey, PublicKey, ScriptBuf, TapNodeHash};
-use bitcoin::secp256k1::{Keypair, Secp256k1, SecretKey};
-use bitcoin::secp256k1::rand;
+use bitcoin::Amount;
+use bitcoin::secp256k1::{rand, Secp256k1};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use bip119_bench::{
     ctv_from_components,
     ctv_from_transaction,
+    ctv_from_components_convenient,
 };
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -39,7 +39,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             black_box(input_index));
 
         black_box(ctv_hash)
-        
+    }));
+    group.bench_function("from_components_convenient", |b| b.iter(|| {
+        let ctv_hash = ctv_from_components_convenient(
+            black_box(a_value), black_box(pka),
+            black_box(b_value), black_box(pkb),
+            black_box(input_index));
+
+        black_box(ctv_hash)
     }));
     group.finish();
 }

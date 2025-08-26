@@ -2,7 +2,7 @@ use bitcoin::hashes::{Hash, sha256};
 use bitcoin::opcodes::all::OP_PUSHBYTES_32;
 use bitcoin::secp256k1::XOnlyPublicKey;
 use bitcoin::{absolute, Amount, blockdata::transaction, consensus::Encodable, key::TweakedPublicKey, io::Write, Opcode, OutPoint, ScriptBuf, Sequence, Transaction, Txid, TxIn, TxOut, WitnessVersion, Witness};
-use bip119::{DefaultCheckTemplateVerifyHash, hash_sequences};
+use bip119::{DefaultCheckTemplateVerifyHash, hash_outputs, hash_sequences, script_pubkey, script_pubkey::ScriptPubkey};
 
 const PAY_TO_ANCHOR_SCRIPT_BYTES: &[u8] = &[0x51, 0x02, 0x4e, 0x73];
 
@@ -101,6 +101,43 @@ pub fn ctv_from_components(
     )
 }
 
+pub fn ctv_from_components_convenient(
+    a_value: Amount, a: XOnlyPublicKey,
+    b_value: Amount, b: XOnlyPublicKey,
+    input_index: u32,
+) -> DefaultCheckTemplateVerifyHash {
+    let sequences = [Sequence::ZERO, Sequence::ZERO];
+    let sequences_sha256 = hash_sequences(sequences.iter().cloned());
+
+    let outputs = [
+        script_pubkey::TxOut {
+            value: a_value,
+            script_pubkey: ScriptPubkey::new_p2tr_tweaked(TweakedPublicKey::dangerous_assume_tweaked(a)),
+        },
+        script_pubkey::TxOut {
+            value: b_value,
+            script_pubkey: ScriptPubkey::new_p2tr_tweaked(TweakedPublicKey::dangerous_assume_tweaked(b)),
+        },
+        script_pubkey::TxOut {
+            value: Amount::ZERO,
+            script_pubkey: ScriptPubkey::new_p2a(),
+        },
+    ];
+
+    let outputs_sha256 = hash_outputs(&outputs);
+
+    DefaultCheckTemplateVerifyHash::from_components(
+        transaction::Version::non_standard(3),
+        absolute::LockTime::ZERO,
+        sequences.len() as u32, // input count
+        None, // No script sigs
+        sequences_sha256,
+        3, // output count
+        outputs_sha256,
+        input_index, // First input
+    )
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -129,6 +166,19 @@ mod test {
                     input_index
                 ),
                 ctv_from_components(
+                    a_value, pka,
+                    b_value, pkb,
+                    input_index
+                ),
+            );
+
+            assert_eq!(
+                ctv_from_transaction(
+                    a_value, pka,
+                    b_value, pkb,
+                    input_index
+                ),
+                ctv_from_components_convenient(
                     a_value, pka,
                     b_value, pkb,
                     input_index
