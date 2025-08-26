@@ -1,7 +1,9 @@
 use bitcoin::Amount;
 use bitcoin::secp256k1::{rand, Secp256k1};
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+
+use std::hint::black_box;
 
 use bip119_bench::{
     ctv_from_components,
